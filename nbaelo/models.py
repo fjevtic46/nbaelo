@@ -1,33 +1,19 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, create_engine
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship
 
 
 from . import scrape
-from config import config
-
-Base = declarative_base()
+from . import db
 
 
-engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
-sessionmkr = sessionmaker()
-sessionmkr.configure(bind=engine)
-session = sessionmkr()
-
-
-# def scrape_and_insert_season(year):
-#     scraper = scrape.GameScraper()
-#     teams = scraper.scrape(year)
-#     Game.insert_schedule_of_games(teams)
-
-
-class Season(Base):
+class Season(db.Model):
     __tablename__ = 'seasons'
     id = Column(Integer, primary_key=True)
     year = Column(Integer)
 
 
-class Team(Base):
+class Team(db.Model):
     __tablename__ = 'teams'
     id = Column(Integer, primary_key=True)
     team_name = Column(String(32))
@@ -38,7 +24,7 @@ class Team(Base):
             return '<%s %s>' % (self.__class__.__name__, self.team_name)
 
 
-class Game(Base):
+class Game(db.Model):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
     date = Column(DateTime(timezone=True))
@@ -53,22 +39,22 @@ class Game(Base):
 
     @classmethod
     def insert_schedule_of_games(cls, year, games):
-        if session.query(Season).filter_by(year=year).count() == 0:
+        if db.session.query(Season).filter_by(year=year).count() == 0:
             season = Season(year=year)
-            session.add(season)
-            session.commit()
+            db.session.add(season)
+            db.session.commit()
         else:
-            season = session.query(Season).filter_by(year=year).first()
+            season = db.session.query(Season).filter_by(year=year).first()
 
         team_symbols = {game.opponent_symbol: game.opponent for game in list(games.values())[0] + list(games.values())[1]}
 
         for symbol, team in team_symbols.items():
-            if session.query(Team).filter_by(symbol=symbol).count() == 0:
-                session.add(Team(team_name=team, symbol=symbol))
-        session.commit()
+            if db.session.query(Team).filter_by(symbol=symbol).count() == 0:
+                db.session.add(Team(team_name=team, symbol=symbol))
+        db.session.commit()
 
 
-        team_to_id = {team.symbol: team.id for team in session.query(Team).all()}
+        team_to_id = {team.symbol: team.id for team in db.session.query(Team).all()}
         for team, game_schedule in games.items():
             team_id = team_to_id[team]
             for game in game_schedule:
@@ -82,14 +68,14 @@ class Game(Base):
                     home_id, away_id = away_id, home_id
                     home_points, away_points = away_points, home_points
 
-                game_already_inserted = bool(session.query(cls)
+                game_already_inserted = bool(db.session.query(cls)
                                             .filter_by(home_id=home_id, away_id=away_id, date=date)
                                             .count())
                 if game_already_inserted:
                     continue
-                session.add(cls(date=date, home_id=home_id, away_id=away_id,
+                db.session.add(cls(date=date, home_id=home_id, away_id=away_id,
                     home_points=home_points, away_points=away_points, season=season.id))
-        session.commit()
+        db.session.commit()
 
     def __repr__(self):
         class_name = self.__class__.__name__

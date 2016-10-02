@@ -1,6 +1,9 @@
-from flask.ext.script import Manager
+import os
+from flask_script import Manager
 
-from nbaelo.app import app
+from nbaelo import create_app
+
+app = create_app(os.getenv('NBAELO_CONFIG', 'development'))
 
 manager = Manager(app)
 

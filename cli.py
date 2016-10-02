@@ -9,7 +9,7 @@ import logging
 import click
 import nbaelo
 
-from nbaelo import models
+from nbaelo import models, db
 from nbaelo.scrape import GameScraper
 
 
@@ -23,13 +23,10 @@ def cli():
 @cli.command()
 @click.option('--drop', '-d', is_flag=True, help="Recreate database and soft reset using only teams data.")
 def createdb(drop):
-    Base = models.Base
-    engine = models.engine
     if drop:
-        logger.info("Dropping all tables in %s", engine)
-        Base.metadata.drop_all(engine)
-    logger.info("Creating database tables %s", engine)
-    Base.metadata.create_all(engine)
+        db.drop_all()
+    logger.info("Creating database tables %s", db)
+    db.create_all()
 
 
 @cli.command()
@@ -42,4 +39,8 @@ def scrape(year):
 
 
 if __name__ == '__main__':
+    from manage import app
+    # see http://stackoverflow.com/a/19438054
+    # for why you need to do this
+    app.app_context().push()
     cli()
