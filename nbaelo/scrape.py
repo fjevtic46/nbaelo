@@ -10,8 +10,8 @@ from dateutil.parser import parse
 
 logger = logging.getLogger(__name__)
 
-Game = collections.namedtuple('Game', ['date', 'is_home_game', 'opponent', 
-    'points', 'opponent_points'])
+Game = collections.namedtuple('Game', ['date', 'is_home_game', 'opponent',
+    'points', 'opponent_points', 'opponent_symbol'])
 
 
 def parse_url(url):
@@ -28,11 +28,12 @@ def parse_game(row_soup):
     game_date = parse(raw_game_date, tzinfos={'EST': pytz.timezone('US/Eastern')})
     is_home_game = bool(raw_data['game_location'].strip() != '@')
     opponent = raw_data['opp_name']
+    opponent_symbol = [a.get('href') for a in row_soup.find_all('a') if '/teams/' in a.get('href')][0].split('/')[2]
     points = int(raw_data['pts'])
     opponent_points = int(raw_data['opp_pts'])
 
-    return Game(date=game_date, is_home_game=is_home_game, opponent=opponent, 
-        points=points, opponent_points=opponent_points)
+    return Game(date=game_date, is_home_game=is_home_game, opponent=opponent,
+        points=points, opponent_points=opponent_points, opponent_symbol=opponent_symbol)
 
 
 def parse_schedule(raw_html):
@@ -65,7 +66,7 @@ class GameScraper:
 
         games = parse_schedule(raw_html)
         teams = {seed_team: games}
-        
+
         team_links = get_additional_links(raw_html)
 
         for link in team_links:
