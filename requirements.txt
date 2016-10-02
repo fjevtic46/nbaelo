@@ -4,6 +4,7 @@ decorator==4.0.10
 entrypoints==0.2.2
 Flask==0.11.1
 Flask-Script==2.0.5
+Flask-SQLAlchemy==2.1
 gunicorn==19.6.0
 itsdangerous==0.24
 Jinja2==2.8
