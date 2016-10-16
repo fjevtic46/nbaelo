@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Date, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -85,3 +85,28 @@ class Game(db.Model):
         away_points = self.away_points
         date = self.date.strftime('%m-%d-%Y')
         return '<{class_name} {date} {away_team} ({away_points}) vs. {home_team} ({home_points})>'.format(class_name=class_name, home_team=home_team, away_team=away_team, home_points=home_points, away_points=away_points, date=date)
+
+
+
+class EloHistory(db.Model):
+    __tablename__ = 'elohistory'
+    id = Column(Integer, primary_key=True)
+    season_id = Column(Integer, ForeignKey('seasons.id'))
+    team_id = Column(Integer, ForeignKey('teams.id'))
+    date = Column(Date)
+    rating_change = Column(Float)
+
+
+class SimulatedProbabilities(db.Model):
+    __tablename__ = 'simulatedprobabilities'
+    season_id = Column(Integer, ForeignKey('seasons.id'), primary_key=True)
+    team_id = Column(Integer, ForeignKey('teams.id'), primary_key=True)
+    date = Column(Date, primary_key=True)
+    playoff = Column(Float)
+    top_seed = Column(Float)
+    champion = Column(Float)
+
+
+
+
+

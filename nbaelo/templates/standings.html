@@ -1,0 +1,19 @@
+
+<table>
+    <tr>
+        <th>Team</th>
+        <th>Conference</th>
+        <th>Rating (1/5/15)</th>
+        <th>Record</th>
+        <th>Point Differental/Game</th>
+    </tr>
+    {% for team in teams %}
+    <tr>
+        <td>{{ team.symbol }}</td>
+        <td>{{ team.conference }}</td>
+        <td>{{ team.current_rating }} ({{ team.change_past_games(1) }}/{{ team.change_past_games(5) }}/{{ team.change_past_games(15)}})</td>
+        <td>{{ team.wins }}-{{team.losses}}</td>
+        <td>{{ point_differentials[team.symbol].points_differential }}</td>
+    </tr>
+    {% endfor %}
+</table>

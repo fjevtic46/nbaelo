@@ -9,8 +9,40 @@ sys.path.append(os.path.dirname(basedir))
 
 import pytz
 import bs4
+import requests
 
-from nbaelo import scrape
+from flask_testing import TestCase
+
+from nbaelo import scrape, create_app
+
+from manage import app
+
+
+class TestFlaskApp(TestCase):
+
+    # def setUp(self):
+        # self.db_fd, flaskr.app.config['DATABASE'] = tempfile.mkstemp()
+        # app.config['TESTING'] = True
+        # self.app = app.test_client()
+        # with app.app_context():
+        #     flaskr.init_db()
+
+    def create_app(self):
+        app = create_app('development')
+        app.config['TESTING'] = True
+        return app
+
+    def tearDown(self):
+        pass
+        # os.close(self.db_fd)
+        # os.unlink(flaskr.app.config['DATABASE'])
+
+    def test_standings_page(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        # test correct year/season is pulled
+        # test the # of teams
 
 
 class TestScraping(unittest.TestCase):
@@ -29,7 +61,7 @@ class TestScraping(unittest.TestCase):
     def test_parse_row_from_table(self):
         raw_html = """<tr data-row="1"><th scope="row" class="right " data-stat="g">2</th><td class="left " data-stat="date_game" csk="2015-10-28"><a href="/boxscores/index.cgi?month=10&amp;day=28&amp;year=2015">Wed, Oct 28, 2015</a></td><td class=" " data-stat="game_start_time">8:00p <span style="font-size:7px;vertical-align:baseline;">EST</span></td><td class=" " data-stat="network"></td><td class="center " data-stat="box_score_text"><a href="/boxscores/201510280MEM.html">Box Score</a></td><td class="center " data-stat="game_location">@</td><td class="left " data-stat="opp_name" csk="MEM2015-10-28"><a href="/teams/MEM/2016.html">Memphis Grizzlies</a></td><td class="center " data-stat="game_result">W</td><td class="center " data-stat="overtimes"></td><td class="right " data-stat="pts">106</td><td class="right " data-stat="opp_pts">76</td><td class="right " data-stat="wins">1</td><td class="right " data-stat="losses">1</td><td class="left " data-stat="game_streak">W 1</td><td class="left " data-stat="game_remarks"></td></tr>"""
         game = scrape.parse_game(bs4.BeautifulSoup(raw_html, 'lxml'))
-        dt = datetime.datetime(2015, 10, 28, 20, 0,tzinfo=pytz.timezone('US/Eastern'))
+        dt = datetime.datetime(2015, 10, 28, 20, 0, tzinfo=pytz.timezone('US/Eastern'))
 
         self.assertEqual(game.date, dt)
         self.assertEqual(game.is_home_game, False)
@@ -37,6 +69,18 @@ class TestScraping(unittest.TestCase):
         self.assertEqual(game.points, 106)
         self.assertEqual(game.opponent_points, 76)
         self.assertEqual(game.opponent_symbol, 'MEM')
+
+    def test_parse_row_for_game_not_yet_played(self):
+        raw_html = """<tr><th class="right " data-stat="g" scope="row">1</th><td class="left " csk="2016-10-25" data-stat="date_game"><a href="/boxscores/index.cgi?month=10&amp;day=25&amp;year=2016">Tue, Oct 25, 2016</a></td><td class=" " data-stat="game_start_time">10:30p <sup><small>ET</small></sup></td><td class=" " data-stat="network">TNT</td><td class="center " data-stat="box_score_text"><a href="/boxscores/201610250GSW.html"></a></td><td class="center " data-stat="game_location"></td><td class="left " csk="SAS2016-10-25" data-stat="opp_name"><a href="/teams/SAS/2017.html">San Antonio Spurs</a></td><td class="center " data-stat="game_result"></td><td class="center " data-stat="overtimes"></td><td class="right " data-stat="pts"></td><td class="right " data-stat="opp_pts"></td><td class="right " data-stat="wins"></td><td class="right " data-stat="losses"></td><td class="left " data-stat="game_streak"></td><td class="left " data-stat="game_remarks"></td></tr>"""
+        game = scrape.parse_game(bs4.BeautifulSoup(raw_html, 'lxml'))
+        dt = datetime.datetime(2016, 10, 25, 22, 30, tzinfo=pytz.timezone('US/Eastern'))
+
+        self.assertEqual(game.date, dt)
+        self.assertEqual(game.is_home_game, True)
+        self.assertEqual(game.opponent, 'San Antonio Spurs')
+        self.assertEqual(game.points, None)
+        self.assertEqual(game.opponent_points, None)
+        self.assertEqual(game.opponent_symbol, 'SAS')
 
     def test_get_additional_links_to_crawl(self):
         links = scrape.get_additional_links(self.html)

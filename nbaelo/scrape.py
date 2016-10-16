@@ -25,12 +25,14 @@ def parse_game(row_soup):
     raw_data = {td.attrs['data-stat']: td.get_text() for td in row_soup.find_all('td')}
 
     raw_game_date = raw_data['date_game'] + ' ' + raw_data['game_start_time']
-    game_date = parse(raw_game_date, tzinfos={'EST': pytz.timezone('US/Eastern')})
+    # im making the assumption here that bball reference will always report game
+    # start times in eastern time
+    game_date = parse(raw_game_date).replace(tzinfo=pytz.timezone('US/Eastern'))
     is_home_game = bool(raw_data['game_location'].strip() != '@')
     opponent = raw_data['opp_name']
     opponent_symbol = [a.get('href') for a in row_soup.find_all('a') if '/teams/' in a.get('href')][0].split('/')[2]
-    points = int(raw_data['pts'])
-    opponent_points = int(raw_data['opp_pts'])
+    points = int(raw_data['pts']) if raw_data['pts'] else None
+    opponent_points = int(raw_data['opp_pts']) if raw_data['opp_pts'] else None
 
     return Game(date=game_date, is_home_game=is_home_game, opponent=opponent,
         points=points, opponent_points=opponent_points, opponent_symbol=opponent_symbol)
