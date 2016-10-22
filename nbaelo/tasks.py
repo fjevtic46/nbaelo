@@ -20,7 +20,7 @@ def uncomplete_games(games, after_date):
 
     count = 0
     for game in games:
-        if game.date >= after_date:
+        if game.date.date() >= after_date:
             game.home_points = None
             game.away_points = None
             count += 1
