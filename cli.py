@@ -8,6 +8,8 @@ import logging
 from datetime import datetime, date, timedelta
 
 import click
+from sqlalchemy import func
+
 import nbaelo
 
 from nbaelo import models, db, tasks
@@ -18,13 +20,14 @@ logger = logging.getLogger(__name__)
 
 
 def date_range(dt1, dt2):
-    dt1 = datetime.strptime(dt1, '%Y%m%d') if not isinstance(dt1, (date, datetime)) else dt1
-    dt2 = datetime.strptime(dt2, '%Y%m%d') if not isinstance(dt2, (date, datetime)) else dt2
+    dt1 = date.strptime(dt1, '%Y%m%d') if not isinstance(dt1, date) else dt1
+    dt2 = date.strptime(dt2, '%Y%m%d') if not isinstance(dt2, date) else dt2
 
     assert dt2 > dt1
 
     for i in range((dt2 - dt1).days + 1):
-        yield dt1 + timedelta(i)
+        dt = dt1 + timedelta(i)
+        yield dt
 
 
 def exists_date(dt):
@@ -64,19 +67,20 @@ def scrape(year):
 @cli.command()
 @click.argument('year', type=int)
 @click.option('--force', '-f', is_flag=True, default=False)
-def generate_probabilities(year, force):
+@click.option('--trials', '-t', type=int)
+def generate_probabilities(year, force, trials):
     season_id = models.Season.query.filter_by(year=year).first().id
-    first_day_of_season = db.session.query(func.min(models.Game.date)).filter(models.Game.season == season_id).scalar()
-    last_day_of_season = db.session.query(func.max(models.Game.date)).filter(models.Game.season == season_id).scalar()
+    first_day_of_season = db.session.query(func.min(models.Game.date)).filter(models.Game.season == season_id).scalar().date()
+    last_day_of_season = db.session.query(func.max(models.Game.date)).filter(models.Game.season == season_id).scalar().date()
 
     for dt in date_range(first_day_of_season, last_day_of_season):
         if force:
             logger.info("Generating team probabilities as of %s" % dt)
-            tasks.generate_daily_probabilities(dt)
+            tasks.generate_daily_probabilities(dt, trials)
         else:
             if not exists_date(dt):
                 logger.info("Generating team probabilities as of %s" % dt)
-                tasks.generate_daily_probabilities
+                tasks.generate_daily_probabilities(dt, trials)
             logger.info("Probabilities for %s already exists. Skipping")
 
 

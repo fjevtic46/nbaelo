@@ -39,7 +39,7 @@ def generate_daily_probabilities(date, trials=1000):
 
     uncomplete_games(gs, date)
 
-    day_before_first_day_of_season = min(g.date for g in gs) - timedelta(1)
+    day_before_first_day_of_season = (min(g.date for g in gs) - timedelta(1)).date()
     logger.info("Day before first day of season for season=%s determined to be %s",
         season_year, day_before_first_day_of_season)
     teams = elo.Team.generate_teams_from_season_of_games(gs, day_before_first_day_of_season)
@@ -57,17 +57,22 @@ def generate_daily_probabilities(date, trials=1000):
 
     logger.info("Completed simulation for %s. Inserting data into database.", date)
     for team, probabilities in data.items():
-        logger.debug("Inserting probabilities for %s", team)
         team_id = models.Team.query.filter_by(symbol=team).first().id
+        logger.debug("Trying to insert probabilities for %s(team_id=%s, season_id=%s, date=%s)",
+            team, team_id, season_id, date)
 
-        preexisting = models.SimulatedProbabilities.query.filter_by(season_id=season_id, team_id=team_id, date=date)
-        preexisting.delete()
+        preexisting = models.SimulatedProbabilities.query.filter_by(season_id=season_id, team_id=team_id, date=date).first()
+        if preexisting is not None:
+            logger.debug("Found existing entry for %s(team_id=%s) %s(season_id=%s) on %s. Proceeding to delete row.",
+                team, team_id, season_year, season_id, date)
+            db.session.delete(preexisting)
+            db.session.commit()
 
         simulated_probalities = models.SimulatedProbabilities(season_id=season_id,
             team_id=team_id, date=date, playoff=probabilities['playoff'],
             top_seed=probabilities['top_seed'], champion=probabilities['champion'])
         db.session.add(simulated_probalities)
-    db.session.commit()
+        db.session.commit()
     logger.info("Completed generating probabilities for all teams for %s", date)
 
 # def generate_elo_history(year):
