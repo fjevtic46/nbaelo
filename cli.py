@@ -65,7 +65,7 @@ def scrape(year):
 @click.argument('year', type=int)
 @click.option('--force', '-f', is_flag=True, default=False)
 def generate_probabilities(year, force):
-    season_id = models.Season.query.filter_by(year=season_year).first().id
+    season_id = models.Season.query.filter_by(year=year).first().id
     first_day_of_season = db.session.query(func.min(models.Game.date)).filter(models.Game.season == season_id).scalar()
     last_day_of_season = db.session.query(func.max(models.Game.date)).filter(models.Game.season == season_id).scalar()
 
