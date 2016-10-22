@@ -15,8 +15,8 @@ def get_season_year_from_date(date):
 
 
 def uncomplete_games(games, after_date):
-    if isinstance(after_date, date):
-        after_date = datetime(after_date.year, after_date.month, after_date.day)
+    # if isinstance(after_date, date):
+        # after_date = date(after_date.year, after_date.month, after_date.day)
 
     count = 0
     for game in games:
