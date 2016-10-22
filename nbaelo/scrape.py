@@ -15,14 +15,16 @@ Game = collections.namedtuple('Game', ['date', 'is_home_game', 'opponent',
 
 
 def parse_url(url):
-    url = url[url.find('teams/'):]
-    _, team, year = url.split('/')
+    url_ = url[url.find('teams/'):]
+    _, team, year = url_.split('/')
     year = int(year.split('.')[0])
+    logger.debug("From given url (%s) identified team=%s, year=%s", url, team, year)
     return team, year
 
 
 def parse_game(row_soup):
     raw_data = {td.attrs['data-stat']: td.get_text() for td in row_soup.find_all('td')}
+    logger.debug("Processing game raw data %s", raw_data)
 
     raw_game_date = raw_data['date_game'] + ' ' + raw_data['game_start_time']
     # im making the assumption here that bball reference will always report game
@@ -34,8 +36,11 @@ def parse_game(row_soup):
     points = int(raw_data['pts']) if raw_data['pts'] else None
     opponent_points = int(raw_data['opp_pts']) if raw_data['opp_pts'] else None
 
-    return Game(date=game_date, is_home_game=is_home_game, opponent=opponent,
+    processed_data = dict(date=game_date, is_home_game=is_home_game, opponent=opponent,
         points=points, opponent_points=opponent_points, opponent_symbol=opponent_symbol)
+    logger.debug("Data processed as %s", processed)
+
+    return Game(**processed_data)
 
 
 def parse_schedule(raw_html):
@@ -43,6 +48,7 @@ def parse_schedule(raw_html):
     table = soup.find('table', id='games')
 
     games = [parse_game(row) for row in table.find_all('tr') if row.find_all('td')]
+    logger.info("From raw html parsed out %s games from schedule", len(games))
     return games
 
 
@@ -53,7 +59,9 @@ def get_additional_links(raw_html):
     table = soup.find('table', id='games')
     for td in table.find_all('td', attrs={'data-stat': 'opp_name'}):
         links.append(td.find('a').get('href'))
-    return list(set(links))
+    links = list(set(links))
+    logger.debug("Found (%s) additional links to scrape: %s", len(links), links)
+    return links
 
 
 class GameScraper:
@@ -72,11 +80,14 @@ class GameScraper:
         team_links = get_additional_links(raw_html)
 
         for link in team_links:
+            logger.info("Processing schedule from link: %s", link)
             team, yr = parse_url(link)
             assert yr == year, 'Fetched schedule for %s, but found link for %s' % (year, yr)
             teams[team] = parse_schedule(self.fetch_schedule(year, team))
 
             time.sleep(self.seconds_between_requests)
+
+        logger.info("Finished scraping games for %s teams: %s", len(teams), list(teams.keys()))
 
         return teams
 

@@ -1,8 +1,11 @@
 from datetime import timedelta, datetime, date
 import math
+import logging
 
 from . import models, elo, db
 
+
+logger = logging.getLogger(__name__)
 
 
 def get_season_year_from_date(date):
@@ -15,24 +18,33 @@ def uncomplete_games(games, after_date):
     if isinstance(after_date, date):
         after_date = datetime(after_date.year, after_date.month, after_date.day)
 
+    count = 0
     for game in games:
         if game.date >= after_date:
             game.home_points = None
             game.away_points = None
+            count += 1
+    logger.info("Set %s games to be incomplete by setting home_points=away_points=None after %s", count, after_date)
 
 
 def generate_daily_probabilities(date, trials=1000):
     season_year = get_season_year_from_date(date)
     season_id = models.Season.query.filter_by(year=season_year).first().id
 
+    logger.info("Given date %s, found season_year=%s with primary_key=%s", date, season_year, season_id)
+
     games = models.Game.query.filter_by(season=season_id).all()
+    logger.info("Retrieved %s games for season=%s", len(games), season_year)
     gs = elo.Game.from_list_of_games(games)
 
     uncomplete_games(gs, date)
 
     day_before_first_day_of_season = min(g.date for g in gs) - timedelta(1)
+    logger.info("Day before first day of season for season=%s determined to be %s",
+        season_year, day_before_first_day_of_season)
     teams = elo.Team.generate_teams_from_season_of_games(gs, day_before_first_day_of_season)
 
+    logger.info("Loading data complete; beginning season simulations...")
     simulator = elo.Simulator(season_year, teams, gs)
     simulator.simulate_many_seasons(trials)
 
@@ -43,8 +55,9 @@ def generate_daily_probabilities(date, trials=1000):
         data[team] = dict(playoff=outcomes[0][team], top_seed=outcomes[1][team],
             champion=outcomes[2][team])
 
-
+    logger.info("Completed simulation for %s. Inserting data into database.", date)
     for team, probabilities in data.items():
+        logger.debug("Inserting probabilities for %s", team)
         team_id = models.Team.query.filter_by(symbol=team).first().id
 
         preexisting = models.SimulatedProbabilities.query.filter_by(season_id=season_id, team_id=team_id, date=date)
@@ -55,6 +68,7 @@ def generate_daily_probabilities(date, trials=1000):
             top_seed=probabilities['top_seed'], champion=probabilities['champion'])
         db.session.add(simulated_probalities)
     db.session.commit()
+    logger.info("Completed generating probabilities for all teams for %s", date)
 
 # def generate_elo_history(year):
 #     season_id = models.Season.query.filter_by(year=year).first().id
