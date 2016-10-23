@@ -108,12 +108,8 @@ def bootstrap():
 
 
 @cli.command()
-@click.option('--date', '-d')
-def update_day(rundate):
-    if rundate is None:
-        rundate = date.today()
-    rundate = date.strptime(rundate, '%Y%m%d')
-    season_year = tasks.get_season_year_from_date(rundate)
+def update():
+    season_year = tasks.get_season_year_from_date(date.today())
     _scrape(season_year)
     _generate_probabilities(season_year, force=False, trials=1000)
 
