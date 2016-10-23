@@ -57,12 +57,13 @@ def createdb(drop):
 
 @cli.command()
 @click.argument('year', type=int)
-def scrape(year):
-    _scrape(year)
+@click.option('--sleep', '-s', type=int, default=1)
+def scrape(year, sleep):
+    _scrape(year, sleep)
 
 
-def _scrape(year):
-    scraper = GameScraper()
+def _scrape(year, sleep=1):
+    scraper = GameScraper(sleep)
     games = scraper.scrape(year)
 
     nbaelo.models.Game.insert_schedule_of_games(year, games)
@@ -110,7 +111,7 @@ def bootstrap():
 @cli.command()
 def update():
     season_year = tasks.get_season_year_from_date(date.today())
-    _scrape(season_year)
+    _scrape(season_year, sleep=10)
     _generate_probabilities(season_year, force=False, trials=1000)
 
 
