@@ -109,9 +109,10 @@ def bootstrap():
 
 
 @cli.command()
-def update():
+@click.option('--sleep', '-s', type=int, default=10)
+def update(sleep):
     season_year = tasks.get_season_year_from_date(date.today())
-    _scrape(season_year, sleep=10)
+    _scrape(season_year, sleep=sleep)
     _generate_probabilities(season_year, force=False, trials=1000)
 
 
