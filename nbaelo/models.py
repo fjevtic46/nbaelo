@@ -68,13 +68,14 @@ class Game(db.Model):
                     home_id, away_id = away_id, home_id
                     home_points, away_points = away_points, home_points
 
-                game_already_inserted = bool(db.session.query(cls)
-                                            .filter_by(home_id=home_id, away_id=away_id, date=date)
-                                            .count())
+                game_already_inserted = db.session.query(cls)\
+                    .filter_by(home_id=home_id, away_id=away_id, date=date).first()
                 if game_already_inserted:
-                    continue
-                db.session.add(cls(date=date, home_id=home_id, away_id=away_id,
-                    home_points=home_points, away_points=away_points, season=season.id))
+                    game_already_inserted.home_points = home_points
+                    game_already_inserted.away_points = away_points
+                else:
+                    db.session.add(cls(date=date, home_id=home_id, away_id=away_id,
+                        home_points=home_points, away_points=away_points, season=season.id))
         db.session.commit()
 
     def __repr__(self):

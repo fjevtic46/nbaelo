@@ -1,0 +1,78 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.10.1/metricsgraphics.min.css">
+    </head>
+    <body>
+        <div>
+            <h1>{{ team.team_name }} ({{ team.symbol }})</h1>
+            {% set team_data = season.teams[team.symbol] %}
+            <ul>
+                <li>Current Record {{ team_data.wins }}-{{ team_data.losses }} (29 out of 30)</li>
+                <li>Current Elo Rating {{ team_data.current_rating }} (+1/+10/+30)</li>
+            </ul>
+            <div>Upcoming Games</div>
+            <div id="elo_rating"></div>
+            <div id="probabilities"></div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.8/d3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.10.1/metricsgraphics.min.js"></script>
+        <script>
+            d3.json('{{ url_for('main.get_probabilities_timeseries', year=year, team_id=team.id) }}', function(data) {
+                for (var i = 0; i < data.length; i++) {
+                    data[i] = MG.convert.date(data[i], 'date');
+                }
+
+                MG.data_graphic({
+                    title: "Probabilities",
+                    data: data,
+
+                    height: 400,
+                    width: 600,
+                    right: 40,
+                    // full_width: true,
+                    x_extended_ticks: true,
+                    y_extended_ticks: true,
+                    target: '#probabilities',
+                    legend: ['Playoff','Top Seed','Champions'],
+                    legend_target: '.legend',
+                    format: 'percentage',
+                    aggregate_rollover: true,
+                    min_y: 0,
+                    max_y: 1
+                });
+            });
+
+
+        </script>
+        <script>
+            d3.json('{{ url_for('main.get_elo_rating_timeseries', year=year, team_id=team.id) }}', function(data) {
+                for (var i = 0; i < data.length; i++) {
+                    data[i] = MG.convert.date(data[i], 'date');
+                }
+
+                MG.data_graphic({
+                    title: "Elo Rating",
+                    data: data,
+                    height: 400,
+                    width:600,
+                    right: 40,
+                    // full_width: true,
+                    x_extended_ticks: true,
+                    y_extended_ticks: true,
+                    yax_format: d3.format('.0f'),
+                    target: '#elo_rating',
+                    legend_target: '.legend',
+                    // min_y:1200,
+                    min_y_from_data: true
+                    // y_min_from_data: true
+                });
+            });
+
+
+        </script>
+
+    </body>
+
+
+</html>
+

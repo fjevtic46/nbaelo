@@ -9,7 +9,7 @@
     </tr>
     {% for team in teams %}
     <tr>
-        <td>{{ team.symbol }}</td>
+        <td><a href="{{ url_for('main.team_page', team_symbol=team.symbol, year=year) }}">{{ team.symbol }}</a></td>
         <td>{{ team.conference }}</td>
         <td>{{ team.current_rating }} ({{ team.change_past_games(1) }}/{{ team.change_past_games(5) }}/{{ team.change_past_games(15)}})</td>
         <td>{{ team.wins }}-{{team.losses}}</td>

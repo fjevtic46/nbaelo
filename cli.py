@@ -58,6 +58,10 @@ def createdb(drop):
 @cli.command()
 @click.argument('year', type=int)
 def scrape(year):
+    _scrape(year)
+
+
+def _scrape(year):
     scraper = GameScraper()
     games = scraper.scrape(year)
 
@@ -67,13 +71,22 @@ def scrape(year):
 @cli.command()
 @click.argument('year', type=int)
 @click.option('--force', '-f', is_flag=True, default=False)
-@click.option('--trials', '-t', type=int)
+@click.option('--trials', '-t', type=int, default=1000)
 def generate_probabilities(year, force, trials):
+    _generate_probabilities(year, force, trials)
+
+
+def _generate_probabilities(year, force=False, trials=None):
     season_id = models.Season.query.filter_by(year=year).first().id
     first_day_of_season = db.session.query(func.min(models.Game.date)).filter(models.Game.season == season_id).scalar().date()
     last_day_of_season = db.session.query(func.max(models.Game.date)).filter(models.Game.season == season_id).scalar().date()
 
-    for dt in date_range(first_day_of_season, last_day_of_season):
+    # if we're doing this for a historical season we want to use the last day of
+    # season. if we're doing this for current season we only want to generate data
+    # for up to today
+    last_day = min(date.today(), last_day_of_season)
+
+    for dt in date_range(first_day_of_season, last_day):
         if force:
             logger.info("Generating team probabilities as of %s" % dt)
             tasks.generate_daily_probabilities(dt, trials)
@@ -81,8 +94,28 @@ def generate_probabilities(year, force, trials):
             if not exists_date(dt):
                 logger.info("Generating team probabilities as of %s" % dt)
                 tasks.generate_daily_probabilities(dt, trials)
-            logger.info("Probabilities for %s already exists. Skipping")
+            logger.info("Probabilities for %s already exists. Skipping", dt)
 
+
+@cli.command()
+def bootstrap():
+    db.create_all()
+    current_year = datetime.now().year
+
+    for year in (current_year - 1, year):
+        _scrape(year)
+        _generate_probabilities(current_year)
+
+
+@cli.command()
+@click.option('--date', '-d')
+def update_day(rundate):
+    if rundate is None:
+        rundate = date.today()
+    rundate = date.strptime(rundate, '%Y%m%d')
+    season_year = tasks.get_season_year_from_date(rundate)
+    _scrape(season_year)
+    _generate_probabilities(season_year, force=False, trials=1000)
 
 
 if __name__ == '__main__':

@@ -79,9 +79,12 @@ def get_point_differentials(games):
 
     for game in games:
         if game.away_team not in teams:
-            teams[game.away_team] = {'points_scored': 0, 'points_allowed': 0, 'games_played': 0}
+            teams[game.away_team] = {'points_scored': 0, 'points_allowed': 0, 'games_played': 0, 'points_differential': 0}
         if game.home_team not in teams:
-            teams[game.home_team] = {'points_scored': 0, 'points_allowed': 0, 'games_played': 0}
+            teams[game.home_team] = {'points_scored': 0, 'points_allowed': 0, 'games_played': 0, 'points_differential': 0}
+        if not game.is_complete:
+            continue
+
         teams[game.away_team]['points_scored'] += game.away_points
         teams[game.away_team]['points_allowed'] += game.home_points
         teams[game.away_team]['games_played'] += 1
@@ -137,7 +140,7 @@ class Team:
 
         total_change_each_date = collections.OrderedDict()
 
-        for i in range((last_date - first_date).days + 1):
+        for i in range((last_date - first_date).days + 2):
             dt = first_date.date() + datetime.timedelta(days=i)
             total_change_each_date[dt] = 0
 
@@ -264,6 +267,14 @@ class Season:
             home_team = self.teams[game.home_team]
             away_team = self.teams[game.away_team]
             game.simulate(home_team.current_rating, away_team.current_rating)
+
+    @property
+    def first_day(self):
+        return min(g.date for g in self.games)
+
+    @property
+    def last_day(self):
+        return max(g.date for g in self.games)
 
 
     @property

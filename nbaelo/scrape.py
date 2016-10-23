@@ -38,7 +38,7 @@ def parse_game(row_soup):
 
     processed_data = dict(date=game_date, is_home_game=is_home_game, opponent=opponent,
         points=points, opponent_points=opponent_points, opponent_symbol=opponent_symbol)
-    logger.debug("Data processed as %s", processed)
+    logger.debug("Data processed as %s", processed_data)
 
     return Game(**processed_data)
 
