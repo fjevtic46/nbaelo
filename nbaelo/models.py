@@ -78,15 +78,17 @@ class Game(db.Model):
 
                 inserted_game = db.session.query(cls)\
                     .filter_by(home_id=home_id, away_id=away_id, date=date).first()
-                if inserted_game and (inserted_game.home_points is None or inserted_game.away_points is None):
-                    logger.info("Existing game found without points. Updating points data: %s", inserted_game)
-                    inserted_game.home_points = home_points
-                    inserted_game.away_points = away_points
-                else:
+                if not inserted_game:
                     logger.info("Inserting new game into database: date=%s, home_id=%s, away_id=%s, home_points=%s, away_points=%s",
                         date, home_id, away_id, home_points, away_points)
                     db.session.add(cls(date=date, home_id=home_id, away_id=away_id,
                         home_points=home_points, away_points=away_points, season=season.id))
+
+                if inserted_game and (inserted_game.home_points is None or inserted_game.away_points is None) and (home_points is not None and away_points is not None):
+                    logger.info("Existing game found without points. Updating points data: %s", inserted_game)
+                    inserted_game.home_points = home_points
+                    inserted_game.away_points = away_points
+
         db.session.commit()
 
     def __repr__(self):
