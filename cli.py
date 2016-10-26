@@ -23,7 +23,7 @@ def date_range(dt1, dt2):
     dt1 = date.strptime(dt1, '%Y%m%d') if not isinstance(dt1, date) else dt1
     dt2 = date.strptime(dt2, '%Y%m%d') if not isinstance(dt2, date) else dt2
     logger.debug("Generating date range between %s and %s", dt1, dt2)
-    assert dt2 > dt1
+    assert dt2 > dt1, 'Can not generate date range where the latter date (%s) is before the former date (%s)' % (dt2, dt1)
 
     for i in range((dt2 - dt1).days + 1):
         dt = dt1 + timedelta(i)
