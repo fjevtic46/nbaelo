@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Date, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -5,6 +7,9 @@ from sqlalchemy.orm import relationship
 
 from . import scrape
 from . import db
+
+
+logger = logging.getLogger(__name__)
 
 
 class Season(db.Model):
@@ -39,7 +44,9 @@ class Game(db.Model):
 
     @classmethod
     def insert_schedule_of_games(cls, year, games):
+        logger.info("Attempting to insert %s games for season=%s", len(games), year)
         if db.session.query(Season).filter_by(year=year).count() == 0:
+            logger.info("No season for %s. Creating new season", year)
             season = Season(year=year)
             db.session.add(season)
             db.session.commit()
@@ -50,6 +57,7 @@ class Game(db.Model):
 
         for symbol, team in team_symbols.items():
             if db.session.query(Team).filter_by(symbol=symbol).count() == 0:
+                logger.info("No existing team found for (%s, %s). Creating new team.", team, symbol)
                 db.session.add(Team(team_name=team, symbol=symbol))
         db.session.commit()
 
@@ -68,12 +76,15 @@ class Game(db.Model):
                     home_id, away_id = away_id, home_id
                     home_points, away_points = away_points, home_points
 
-                game_already_inserted = db.session.query(cls)\
+                inserted_game = db.session.query(cls)\
                     .filter_by(home_id=home_id, away_id=away_id, date=date).first()
-                if game_already_inserted:
-                    game_already_inserted.home_points = home_points
-                    game_already_inserted.away_points = away_points
+                if inserted_game and (inserted_game.home_points is None or inserted_game.away_points is None):
+                    logger.info("Existing game found without points. Updating points data: %s", inserted_game)
+                    inserted_game.home_points = home_points
+                    inserted_game.away_points = away_points
                 else:
+                    logger.info("Inserting new game into database: date=%s, home_id=%s, away_id=%s, home_points=%s, away_points=%s",
+                        date, home_id, away_id, home_points, away_points)
                     db.session.add(cls(date=date, home_id=home_id, away_id=away_id,
                         home_points=home_points, away_points=away_points, season=season.id))
         db.session.commit()
