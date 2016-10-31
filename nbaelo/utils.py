@@ -1,6 +1,15 @@
 import collections
 import functools
 
+from datetime import datetime
+
+import pytz
+
+
+def now_pst():
+    now = datetime.utcnow()
+    return pytz.utc.localize(now).astimezone(pytz.timezone('US/Pacific'))
+
 
 class Memoized:
     """Decorator. Caches a function's return value each time it is called.

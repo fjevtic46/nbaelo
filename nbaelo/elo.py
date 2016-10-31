@@ -213,6 +213,10 @@ class Game:
             gs.append(cls(home_team, away_team, g.date, g.home_points, g.away_points))
         return gs
 
+    def to_dict(self):
+        return dict(home_team=self.home_team, away_team=self.away_team, date=self.date,
+                home_points=self.home_points, away_points=self.away_points, is_simulated=self.is_simulated)
+
 
 class Season:
 
@@ -319,6 +323,10 @@ class Season:
             return list(reversed(sorted(standings, key=lambda x: x[1])))
 
         return sort_standings(western), sort_standings(eastern)
+
+    def __iter__(self):
+        for game in self.games:
+            yield game
 
 
 class PlayoffSimulator:

@@ -12,11 +12,12 @@ from sqlalchemy import func
 
 import nbaelo
 
-from nbaelo import models, db, tasks
+from nbaelo import models, db, tasks, utils
 from nbaelo.scrape import GameScraper
 
 
 logger = logging.getLogger(__name__)
+
 
 
 def date_range(dt1, dt2):
@@ -85,7 +86,7 @@ def _generate_probabilities(year, force=False, trials=None):
     # if we're doing this for a historical season we want to use the last day of
     # season. if we're doing this for current season we only want to generate data
     # for up to today
-    last_day = min(date.today(), last_day_of_season)
+    last_day = min(utils.now_pst().date(), last_day_of_season)
 
     for dt in date_range(first_day_of_season, last_day):
         if force:
@@ -110,10 +111,11 @@ def bootstrap():
 
 @cli.command()
 @click.option('--sleep', '-s', type=int, default=10)
-def update(sleep):
+@click.option('--trials', '-t', type=int, default=1000)
+def update(sleep, trials):
     season_year = tasks.get_season_year_from_date(date.today())
     _scrape(season_year, sleep=sleep)
-    _generate_probabilities(season_year, force=False, trials=1000)
+    _generate_probabilities(season_year, force=False, trials=trials)
 
 
 if __name__ == '__main__':

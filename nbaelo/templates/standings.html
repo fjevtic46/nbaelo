@@ -1,4 +1,10 @@
 
+<ul>
+    {% for game in upcoming_games %}
+        <li>{{ game.away_elo }} -- {{ game.home_elo }}</li>
+    {% endfor %}
+</ul>
+
 <table>
     <tr>
         <th>Team</th>

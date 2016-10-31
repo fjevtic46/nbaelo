@@ -1,6 +1,8 @@
 from datetime import timedelta, date
 from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for
 
+import sqlalchemy
+
 from . import models, db, elo, utils, tasks
 
 
@@ -37,6 +39,27 @@ def get_played_through_season(year):
     season.play_through_season()
     return season
 
+@utils.memoized
+def get_upcoming_games(date):
+    # this is really ugly how come this simpler version wasn't working for me:
+    # games = models.Game.query.filter(sqlalchemy.cast(models.Game.date, sqlalchemy.DATE) == date).all()
+
+    year = tasks.get_season_year_from_date(date)
+    season = get_played_through_season(year)
+    games = [game for game in season if game.date.date() == date]
+
+    upcoming_games = []
+    for game in games:
+        game_data = game.to_dict()
+        away_elo = season.teams[game.away_team].current_rating
+        home_elo = season.teams[game.home_team].current_rating
+        game_data['away_elo'] = away_elo
+        game_data['home_elo'] = home_elo
+        game_data['away_win_prob'] = elo.get_expected_outcome(away_elo, home_elo)
+        game_data['home_win_prob'] = elo.get_expected_outcome(home_elo, away_elo)
+        upcoming_games.append(game_data)
+    return upcoming_games
+
 
 @main.context_processor
 def provide_season():
@@ -45,7 +68,6 @@ def provide_season():
         season = get_played_through_season(year)
         return dict(year=year, season=season)
     return dict()
-
 
 
 @main.route('/')
@@ -58,8 +80,9 @@ def home():
 def standings_page(year):
     season = get_played_through_season(year)
     games = season.games
+    upcoming_games = get_upcoming_games(utils.now_pst().date())
     return render_template('standings.html', teams=sorted(season.teams.values(), key=lambda x: -x.current_rating),
-        point_differentials=elo.get_point_differentials(games))
+        point_differentials=elo.get_point_differentials(games), upcoming_games=upcoming_games)
 
 
 @main.route('/team/<team_symbol>/<int:year>')
