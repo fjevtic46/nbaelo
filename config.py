@@ -12,6 +12,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'nba_games.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
 
+
+    LOGO_URL_RESOURCE = 'https://d2p3bygnnzw9w3.cloudfront.net/req/201611021/tlogo/bbr/%s-2017.png'
+
+
     @classmethod
     def init_app(cls, app):
         pass

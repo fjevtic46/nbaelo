@@ -120,6 +120,8 @@ class SimulatedProbabilities(db.Model):
     top_seed = Column(Float)
     champion = Column(Float)
 
+    team = relationship('Team', foreign_keys='SimulatedProbabilities.team_id')
+
 
 
 

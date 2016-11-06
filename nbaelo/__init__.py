@@ -21,8 +21,8 @@ def create_app(config_name):
     from .app import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    @app.route('/')
-    def home():
-        return 'hello world'
+    from . import filters
+    app.jinja_env.filters['format_point_differential'] = filters.format_point_differential
+    app.jinja_env.filters['percent'] = filters.percent
 
     return app

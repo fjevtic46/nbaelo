@@ -61,6 +61,16 @@ def get_upcoming_games(date):
     return upcoming_games
 
 
+@utils.memoized
+def get_date_probabilities(date):
+    probs = models.SimulatedProbabilities.query.filter(models.SimulatedProbabilities.date == date)
+    return {p.team.symbol: p for p in probs}
+
+
+def get_latest_date_available():
+    return db.session.query(sqlalchemy.func.max(models.SimulatedProbabilities.date)).scalar()
+
+
 @main.context_processor
 def provide_season():
     if request.view_args is not None and "year" in request.view_args:
@@ -81,8 +91,10 @@ def standings_page(year):
     season = get_played_through_season(year)
     games = season.games
     upcoming_games = get_upcoming_games(utils.now_pst().date())
+    latest_probabilities = get_date_probabilities(get_latest_date_available())
     return render_template('standings.html', teams=sorted(season.teams.values(), key=lambda x: -x.current_rating),
-        point_differentials=elo.get_point_differentials(games), upcoming_games=upcoming_games)
+        point_differentials=elo.get_point_differentials(games), upcoming_games=upcoming_games,
+        latest_probabilities=latest_probabilities)
 
 
 @main.route('/team/<team_symbol>/<int:year>')

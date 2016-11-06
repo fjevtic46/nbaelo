@@ -1,25 +1,60 @@
+{% extends "base.html" %}
 
-<ul>
+{% block content %}
+<!-- <ul>
     {% for game in upcoming_games %}
         <li>{{ game.away_elo }} -- {{ game.home_elo }}</li>
     {% endfor %}
-</ul>
+</ul> -->
 
-<table>
+<div>
+
+<!-- <h1>Standings</h1> -->
+
+<h2>Upcoming Games</h2>
+
+<div class="bs-callout bs-callout-warning" id="callout-btn-group-ie8-border">
+    <table class="table">
+        <tr>
+            <th>Away</th>
+            <th colspan="2">Pre-game Probabilities</th>
+            <th>Home</th>
+        </tr>
+        {% for game in upcoming_games %}
+        <tr>
+            <td>{{ game.away_team }}</td>
+            <td>{{ game.away_win_prob | percent }}</td>
+            <td>{{ game.home_win_prob | percent }}</td>
+            <td>{{ game.home_team }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+<h2>Team Forecasts</h2>
+
+<table class="table">
     <tr>
         <th>Team</th>
         <th>Conference</th>
         <th>Rating (1/5/15)</th>
         <th>Record</th>
         <th>Point Differental/Game</th>
+        <th>Make Playoffs</th>
+        <th>Top Seed</th>
+        <th>Win Championship</th>
     </tr>
     {% for team in teams %}
     <tr>
-        <td><a href="{{ url_for('main.team_page', team_symbol=team.symbol, year=year) }}">{{ team.symbol }}</a></td>
+        <td><img src="{{ team.logo_url }}" width="28" height="28"/> <a href="{{ url_for('main.team_page', team_symbol=team.symbol, year=year) }}">{{ team.symbol }}</a></td>
         <td>{{ team.conference }}</td>
-        <td>{{ team.current_rating }} ({{ team.change_past_games(1) }}/{{ team.change_past_games(5) }}/{{ team.change_past_games(15)}})</td>
+        <td>{{ team.current_rating | int }} ({{ team.change_past_games(1) | int }}/{{ team.change_past_games(5) | int }}/{{ team.change_past_games(15) | int}})</td>
         <td>{{ team.wins }}-{{team.losses}}</td>
-        <td>{{ point_differentials[team.symbol].points_differential }}</td>
+        <td>{{ point_differentials[team.symbol].points_differential | format_point_differential }}</td>
+        <td>{{ latest_probabilities[team.symbol].playoff | percent }}</td>
+        <td>{{ latest_probabilities[team.symbol].top_seed | percent }}</td>
+        <td>{{ latest_probabilities[team.symbol].champion | percent }}</td>
     </tr>
     {% endfor %}
 </table>
+</div>
+{% endblock %}

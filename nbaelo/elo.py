@@ -3,7 +3,11 @@ import datetime
 import itertools
 import random
 
+from config import Config
 
+
+WESTERN_CONFERENCE = 'West'
+EASTERN_CONFERENCE = 'East'
 
 # standings -> seed into playoffs
 # and then simulate playoffs 10k times: PlayoffSimulator
@@ -126,6 +130,10 @@ class Team:
         return sum([reverse_ordered_changes[i][1] for i in range(num_games) if i < total_games_played])
 
     @property
+    def logo_url(self):
+        return Config.LOGO_URL_RESOURCE % (self.symbol)
+
+    @property
     def current_rating(self):
         return self.start_rating + sum(self.rating_changes.values())
 
@@ -160,7 +168,7 @@ class Team:
 
         teams = []
         for team in team_games.keys():
-            conference = 'western' if team in western else 'eastern'
+            conference = WESTERN_CONFERENCE if team in western else EASTERN_CONFERENCE
             teams.append(cls(team, start_date, conference))
         return teams
 
@@ -316,8 +324,8 @@ class Season:
                 team_records[away][0] += 1
         team_records = {k: tuple(v) for k, v in team_records.items()}
 
-        western = [(team, record, self.teams[team]) for team, record in team_records.items() if self.teams[team].conference == 'western']
-        eastern = [(team, record, self.teams[team]) for team, record in team_records.items() if self.teams[team].conference == 'eastern']
+        western = [(team, record, self.teams[team]) for team, record in team_records.items() if self.teams[team].conference == WESTERN_CONFERENCE]
+        eastern = [(team, record, self.teams[team]) for team, record in team_records.items() if self.teams[team].conference == EASTERN_CONFERENCE]
 
         def sort_standings(standings):
             return list(reversed(sorted(standings, key=lambda x: x[1])))
