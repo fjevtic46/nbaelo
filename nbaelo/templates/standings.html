@@ -14,7 +14,10 @@
 <h2>Upcoming Games</h2>
 
 <div class="bs-callout bs-callout-warning" id="callout-btn-group-ie8-border">
-    <table class="table">
+    <button type="button" class="btn btn-primary" id="last-games">Last</button>
+    <button type="button" class="btn btn-primary" id="next-games">Next</button>
+    <div id="upcoming-games-date"></div>
+    <table class="table" id="upcoming-games">
         <tr>
             <th>Away</th>
             <th colspan="2">Pre-game Probabilities</th>
@@ -57,4 +60,73 @@
     {% endfor %}
 </table>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<script>
+    $(document).ready(function() {
+        fooboo(moment().format("YYYY-MM-DD"))
+    })
+
+    $( "#last-games" ).click(function() {
+         fooboo(new_date(-1))
+    });
+
+    $( "#next-games" ).click(function() {
+        fooboo(new_date(1))
+    });
+
+    var new_date = function(i) {
+        var current_date = moment($('#upcoming-games-date').text())
+
+        return current_date.add(i, 'days').format('YYYY-MM-DD')
+    }
+
+
+    var fooboo = function(ds) {
+        $.ajax({
+            url: "/api/games/" + ds,
+            dataType: "HTML",
+            error: function(msg){
+                alert(msg.statusText);
+                return msg;
+            },
+            success: function(s){
+                var json = JSON.parse(s)
+                var dt = moment(json['date'])
+                var games = json['games']
+                var html = `        <tr>
+            <th>Away</th>
+            <th colspan="2">Pre-game Probabilities</th>
+            <th>Home</th>
+        </tr>`;
+                for (var i = 0; i < games.length; i++) {
+                    game = games[i]
+                    away_team = game['away_team']
+                    home_team = game['home_team']
+                    away_win_prob = (game['away_win_prob'] * 100).toFixed(0) + '%'
+                    home_win_prob = (game['home_win_prob'] * 100).toFixed(0) + '%'
+                    row = `
+                    <tr>
+                        <td>${away_team}</td>
+                        <td>${away_win_prob}</td>
+                        <td>${home_win_prob}</td>
+                        <td>${home_team}</td>
+                    </tr>
+                    `
+
+                    html += row
+                }
+                $("#upcoming-games").html(html);
+                $("#upcoming-games-date").html(dt.format('YYYY-MM-DD'))
+            }
+        });
+    }
+
+</script>
 {% endblock %}

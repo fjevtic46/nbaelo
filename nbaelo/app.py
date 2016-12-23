@@ -1,4 +1,4 @@
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from flask import Blueprint, render_template, abort, jsonify, request, redirect, url_for
 
 import sqlalchemy
@@ -58,7 +58,7 @@ def get_upcoming_games(date):
         game_data['away_win_prob'] = elo.get_expected_outcome(away_elo, home_elo)
         game_data['home_win_prob'] = elo.get_expected_outcome(home_elo, away_elo)
         upcoming_games.append(game_data)
-    return upcoming_games
+    return dict(date=date.strftime('%Y-%m-%d'), games=upcoming_games)
 
 
 @utils.memoized
@@ -90,10 +90,10 @@ def home():
 def standings_page(year):
     season = get_played_through_season(year)
     games = season.games
-    upcoming_games = get_upcoming_games(utils.now_pst().date())
+    # upcoming_games = get_upcoming_games(utils.now_pst().date())
     latest_probabilities = get_date_probabilities(get_latest_date_available())
     return render_template('standings.html', teams=sorted(season.teams.values(), key=lambda x: -x.current_rating),
-        point_differentials=elo.get_point_differentials(games), upcoming_games=upcoming_games,
+        point_differentials=elo.get_point_differentials(games),
         latest_probabilities=latest_probabilities)
 
 
@@ -128,6 +128,16 @@ def get_elo_rating_timeseries(year, team_id):
         ratings = [{'date': dt.strftime('%Y-%m-%d'), 'value': rating} for dt, rating in t.rating_history]
         json_data.append(ratings)
     return jsonify(json_data)
+
+
+@main.route('/api/games/<date_string>')
+def foo(date_string):
+    try:
+        dt = datetime.strptime(date_string, '%Y-%m-%d').date()
+    except ValueError:
+        abort(404)
+
+    return jsonify(get_upcoming_games(dt))
 
 
 
